@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProFid | Gestión de Presupuestos de Obra</title>
+<link rel="icon" href="data:,">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---------- Paleta ProFid · Finanzas / Azul Océano ---------- */
+    --pf-navy-950:#08182A;
+    --pf-navy-900:#0C2338;
+    --pf-navy-800:#123A5C;
+    --pf-brand-700:#18517C;   /* azul principal (tomado del isotipo) */
+    --pf-brand-600:#1F6690;
+    --pf-brand-500:#2B7FB0;
+    --pf-sky-400:#5AA9D6;
+    --pf-sky-300:#8FC6E6;
+    --pf-gray-50:#F6F8FA;
+    --pf-gray-100:#EEF2F6;
+    --pf-gray-200:#E2E8F0;
+    --pf-gray-300:#CBD5E1;
+    --pf-gray-400:#94A3B8;
+    --pf-gray-500:#64748B;
+    --pf-gray-700:#334155;
+    --pf-gray-900:#0F172A;
+    --pf-green:#1F9D64;
+    --pf-amber:#E8A33D;
+    --pf-red:#E2454B;
+  }
+  *{font-family:'Inter',sans-serif; box-sizing:border-box;}
+  .font-industrial{font-family:'Barlow Condensed',sans-serif; letter-spacing:0.02em;}
+  body{background:var(--pf-gray-50); overflow-x:hidden;}
+  .bg-industrial{background:linear-gradient(180deg,var(--pf-navy-900),var(--pf-navy-950));}
+  .bg-panel{background:var(--pf-navy-800);}
+  .text-brand{color:var(--pf-sky-400);}
+  .bg-brand{background:linear-gradient(135deg,var(--pf-brand-600),var(--pf-brand-700));}
+  .hidden-view{display:none !important;}
+  .scrollbar-thin::-webkit-scrollbar{width:6px; height:6px;}
+  .scrollbar-thin::-webkit-scrollbar-thumb{background:var(--pf-gray-300); border-radius:10px;}
+  .nav-item{transition:all .2s ease; border-left:4px solid transparent;}
+  .nav-item:hover{background:rgba(90,169,214,0.08);}
+  .nav-item.active{background:rgba(90,169,214,0.14); border-left:4px solid var(--pf-sky-400); color:var(--pf-sky-300);}
+  .card-elevate{box-shadow:0 1px 3px rgba(15,35,56,.06), 0 10px 25px -10px rgba(15,35,56,.10); transition:transform .2s ease, box-shadow .2s ease;}
+  .card-elevate:hover{transform:translateY(-2px); box-shadow:0 10px 20px -8px rgba(15,35,56,.18);}
+  .progress-track{background:var(--pf-gray-200); border-radius:999px; overflow:hidden;}
+  .progress-fill{transition:width 1s cubic-bezier(.22,1,.36,1); border-radius:999px; background:linear-gradient(90deg,var(--pf-brand-600),var(--pf-sky-400));}
+  .fade-in{animation:fadeIn .45s ease both;}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);}}
+  .scan-line{position:absolute; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(--pf-sky-400),transparent); box-shadow:0 0 12px 2px var(--pf-sky-400); animation:scan 1.6s linear infinite;}
+  @keyframes scan{0%{top:0;} 100%{top:100%;}}
+  .pulse-dot{animation:pulseDot 1.2s ease-in-out infinite;}
+  @keyframes pulseDot{0%,100%{opacity:.3;} 50%{opacity:1;}}
+  .login-bg{background:
+    radial-gradient(circle at 15% 20%, rgba(90,169,214,0.14), transparent 40%),
+    radial-gradient(circle at 85% 80%, rgba(43,127,176,0.16), transparent 45%),
+    var(--pf-navy-950);
+  }
+  .profile-card{border:2px solid transparent; transition:all .25s ease;}
+  .profile-card:hover{border-color:var(--pf-sky-400); transform:translateY(-4px);}
+  .profile-card.selected{border-color:var(--pf-sky-400); background:rgba(90,169,214,0.08);}
+  input[type=file]::file-selector-button{display:none;}
+  .badge{font-size:11px; padding:2px 8px; border-radius:999px; font-weight:600;}
+  .step-dot{width:26px; height:26px; border-radius:999px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; border:2px solid var(--pf-gray-300); color:var(--pf-gray-400); background:#fff;}
+  .step-dot.done{background:var(--pf-green); border-color:var(--pf-green); color:white;}
+  .step-dot.active{background:var(--pf-sky-400); border-color:var(--pf-sky-400); color:white;}
+  .step-line{flex:1; height:2px; background:var(--pf-gray-300);}
+  .step-line.done{background:var(--pf-green);}
+  table.catalog-table thead th{position:sticky; top:0; background:var(--pf-gray-50); z-index:5;}
+  ::selection{background:var(--pf-sky-400); color:white;}
+  .btn-primary{background:linear-gradient(135deg,var(--pf-brand-600),var(--pf-brand-700)); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.08);}
+  .logo-icon-img{filter: drop-shadow(0 2px 4px rgba(0,0,0,.15));}
+</style>
+</head>
+<body class="text-slate-800">
+
+<!-- ======================= APP PRINCIPAL ======================= -->
+<div id="view-app" class="min-h-screen flex">
+
+  <!-- SIDEBAR -->
+  <aside class="w-64 bg-industrial flex-shrink-0 flex-col hidden lg:flex">
+    <div class="flex items-center gap-3 px-6 py-6 border-b border-white/10">
+      <div class="w-9 h-9 rounded-lg bg-brand flex items-center justify-center text-white font-industrial font-extrabold text-lg logo-icon-img">P</div>
+      <span class="font-industrial text-xl font-extrabold text-white">Pro<span class="text-brand">Fid</span></span>
+    </div>
+
+    <nav class="flex-1 py-4">
+      <button class="nav-item active w-full flex items-center gap-3 px-6 py-3 text-gray-300 text-sm font-medium" data-tab="dashboard">
+        <span class="text-lg">📊</span> Dashboard de Obra
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-6 py-3 text-gray-300 text-sm font-medium" data-tab="carga">
+        <span class="text-lg">🧾</span> Carga de Facturas IA
+      </button>
+      <button class="nav-item w-full flex items-center gap-3 px-6 py-3 text-gray-300 text-sm font-medium" data-tab="catalogo">
+        <span class="text-lg">📦</span> Catálogo de Insumos
+      </button>
+    </nav>
+
+    <div class="px-6 py-4 border-t border-white/10">
+      <div class="flex items-center gap-3">
+        <div id="sidebar-avatar" class="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white font-bold text-sm">--</div>
+        <div class="min-w-0">
+          <p id="sidebar-name" class="text-white text-sm font-medium truncate">Sin nombre</p>
+          <p id="sidebar-role" class="text-gray-400 text-xs truncate">Sin perfil</p>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CONTENIDO -->
+  <div class="flex-1 flex flex-col min-w-0">
+
+    <!-- TOPBAR -->
+    <header class="bg-white border-b border-gray-200 px-4 md:px-8 py-4 flex items-center justify-between sticky top-0 z-30">
+      <div class="flex items-center gap-3">
+        <!-- mobile menu -->
+        <select id="mobile-nav" class="lg:hidden border border-gray-300 rounded-lg text-sm px-3 py-2">
+          <option value="dashboard">📊 Dashboard de Obra</option>
+          <option value="carga">🧾 Carga de Facturas IA</option>
+          <option value="catalogo">📦 Catálogo de Insumos</option>
+        </select>
+        <div class="hidden lg:block">
+          <h1 id="topbar-title" class="font-industrial text-2xl font-bold text-slate-800">DASHBOARD DE OBRA</h1>
+          <p id="topbar-project" class="text-sm text-gray-500">Sin obra asignada</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="hidden md:inline-flex items-center gap-2 text-xs bg-blue-50 text-[--pf-brand-700] px-3 py-1.5 rounded-full font-medium" style="color:var(--pf-brand-700)">
+          <span class="w-2 h-2 rounded-full" style="background:var(--pf-brand-600)"></span> Sin datos cargados
+        </span>
+        <div id="topbar-avatar" class="w-9 h-9 rounded-full bg-brand flex items-center justify-center text-white font-bold text-sm">--</div>
+      </div>
+    </header>
+
+    <main class="flex-1 p-4 md:p-8 scrollbar-thin overflow-y-auto">
+
+      <!-- ================= TAB: DASHBOARD ================= -->
+      <section id="tab-dashboard" class="fade-in">
+
+        <!-- Tarjetas métricas -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+          <div class="bg-white rounded-xl p-5 card-elevate border border-gray-100">
+            <p class="text-xs text-gray-500 font-medium mb-1">PRESUPUESTO TOTAL</p>
+            <p id="metric-total" class="font-industrial text-3xl font-bold text-slate-800">$0</p>
+            <p class="text-xs text-gray-400 mt-1">Asignado a la obra completa</p>
+          </div>
+          <div class="bg-white rounded-xl p-5 card-elevate border border-gray-100">
+            <p class="text-xs text-gray-500 font-medium mb-1">GASTO REAL EJECUTADO</p>
+            <p id="metric-gastado" class="font-industrial text-3xl font-bold" style="color:var(--pf-brand-600)">$0</p>
+            <p class="text-xs text-gray-400 mt-1">Según facturas cargadas</p>
+          </div>
+          <div class="bg-white rounded-xl p-5 card-elevate border border-gray-100">
+            <p class="text-xs text-gray-500 font-medium mb-1">SALDO DISPONIBLE</p>
+            <p id="metric-disponible" class="font-industrial text-3xl font-bold" style="color:var(--pf-green)">$0</p>
+            <p class="text-xs text-gray-400 mt-1">Presupuesto restante</p>
+          </div>
+          <div class="bg-white rounded-xl p-5 card-elevate border border-gray-100">
+            <p class="text-xs text-gray-500 font-medium mb-1">% EJECUCIÓN GLOBAL</p>
+            <p id="metric-porcentaje" class="font-industrial text-3xl font-bold text-slate-800">0%</p>
+            <div class="progress-track h-2 mt-2">
+              <div id="metric-porcentaje-bar" class="progress-fill h-2" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Presupuesto vs Gasto por partida -->
+        <div class="bg-white rounded-xl p-5 md:p-6 card-elevate border border-gray-100 mb-8">
+          <div class="flex items-center justify-between mb-5 flex-wrap gap-3">
+            <div>
+              <h2 class="font-industrial text-xl font-bold text-slate-800">PRESUPUESTO ASIGNADO VS. GASTO REAL</h2>
+              <p class="text-sm text-gray-500">Control por partida de obra</p>
+            </div>
+            <button id="btn-nueva-partida" class="text-sm font-semibold px-4 py-2 rounded-lg border" style="color:var(--pf-brand-700); border-color:var(--pf-brand-500);">
+              + Agregar partida
+            </button>
+          </div>
+
+          <!-- Formulario para agregar partida (oculto por defecto) -->
+          <form id="form-partida" class="hidden-view grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 bg-[--pf-gray-50] rounded-lg p-4 border border-gray-200" style="background:var(--pf-gray-50)">
+            <div class="md:col-span-2">
+              <label class="text-xs text-gray-500 font-medium mb-1 block">Nombre de la partida</label>
+              <input id="np-nombre" type="text" placeholder="Ej: Movimiento de Tierras" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none" style="border-color:var(--pf-gray-300)">
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 font-medium mb-1 block">Presupuesto asignado ($)</label>
+              <input id="np-asignado" type="number" min="0" step="0.01" placeholder="0" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+            </div>
+            <div class="flex items-end gap-2">
+              <button type="submit" class="btn-primary flex-1 text-sm font-semibold py-2 rounded-lg">Guardar</button>
+              <button type="button" id="btn-cancelar-partida" class="flex-1 text-sm font-medium py-2 rounded-lg border border-gray-300 text-gray-600">Cancelar</button>
+            </div>
+          </form>
+
+          <div id="partidas-container" class="space-y-6"></div>
+          <p id="partidas-empty" class="text-sm text-gray-400 text-center py-10">Todavía no hay partidas de obra cargadas. Agregá la primera partida o conectá tu base de datos.</p>
+        </div>
+
+        <!-- Últimos movimientos -->
+        <div class="bg-white rounded-xl p-5 md:p-6 card-elevate border border-gray-100">
+          <h2 class="font-industrial text-xl font-bold text-slate-800 mb-4">ÚLTIMAS FACTURAS PROCESADAS</h2>
+          <div class="overflow-x-auto scrollbar-thin">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-500 border-b border-gray-200">
+                  <th class="py-2 pr-4 font-medium">Proveedor</th>
+                  <th class="py-2 pr-4 font-medium">Fecha</th>
+                  <th class="py-2 pr-4 font-medium">Insumo</th>
+                  <th class="py-2 pr-4 font-medium">Partida</th>
+                  <th class="py-2 pr-4 font-medium text-right">Monto</th>
+                </tr>
+              </thead>
+              <tbody id="movimientos-body" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+          <p id="movimientos-empty" class="text-sm text-gray-400 text-center py-6">Todavía no se procesaron facturas. Usá el módulo de Carga de Facturas IA o conectá tu base de datos.</p>
+        </div>
+      </section>
+
+      <!-- ================= TAB: CARGA IA ================= -->
+      <section id="tab-carga" class="fade-in hidden-view">
+        <div class="grid grid-cols-1 xl:grid-cols-5 gap-6">
+
+          <!-- Columna carga -->
+          <div class="xl:col-span-2 bg-white rounded-xl p-6 card-elevate border border-gray-100 h-fit">
+            <h2 class="font-industrial text-xl font-bold text-slate-800 mb-1">SUBIR FACTURA (PDF)</h2>
+            <p class="text-sm text-gray-500 mb-5">Subí una factura de un corralón o proveedor de materiales para iniciar el análisis.</p>
+
+            <label for="file-input" id="dropzone" class="relative block border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer transition overflow-hidden" style="--tw-border-opacity:1;">
+              <input type="file" id="file-input" accept="application/pdf" class="hidden">
+              <div id="dropzone-idle">
+                <div class="text-4xl mb-2">📄</div>
+                <p class="text-sm font-medium text-slate-700">Hacé clic para simular la carga de un PDF</p>
+                <p class="text-xs text-gray-400 mt-1">Factura de corralón / proveedor de materiales</p>
+              </div>
+            </label>
+
+            <div class="mt-5 text-xs rounded-lg px-4 py-3 border" style="background:var(--pf-gray-50); border-color:var(--pf-gray-200); color:var(--pf-gray-500);">
+              Al conectar el motor de IA / base de datos, los campos del formulario de la derecha se completarán automáticamente. Por ahora podés cargarlos manualmente.
+            </div>
+          </div>
+
+          <!-- Columna proceso + validación -->
+          <div class="xl:col-span-3 bg-white rounded-xl p-6 card-elevate border border-gray-100">
+            <h2 class="font-industrial text-xl font-bold text-slate-800 mb-1">PROCESAMIENTO Y VALIDACIÓN</h2>
+            <p class="text-sm text-gray-500 mb-6">Revisá y completá los datos antes de guardarlos en el sistema.</p>
+
+            <!-- Steps -->
+            <div class="flex items-center mb-8" id="steps-row">
+              <div class="step-dot" data-step="1">1</div>
+              <div class="step-line" data-line="1"></div>
+              <div class="step-dot" data-step="2">2</div>
+              <div class="step-line" data-line="2"></div>
+              <div class="step-dot" data-step="3">3</div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500 -mt-6 mb-8 px-1">
+              <span>Lectura IA</span><span>Validación</span><span>Confirmado</span>
+            </div>
+
+            <!-- Estado vacío -->
+            <div id="ia-empty" class="text-center py-16 text-gray-400">
+              <div class="text-5xl mb-3">🤖</div>
+              <p class="text-sm">Subí una factura para comenzar el análisis con IA.</p>
+            </div>
+
+            <!-- Estado escaneando -->
+            <div id="ia-scanning" class="hidden-view text-center py-10">
+              <div class="relative w-40 h-52 mx-auto rounded-lg overflow-hidden border mb-5" style="background:var(--pf-gray-100); border-color:var(--pf-gray-200);">
+                <div class="scan-line"></div>
+                <div class="p-3 space-y-2 opacity-40">
+                  <div class="h-2 rounded w-3/4" style="background:var(--pf-gray-400)"></div>
+                  <div class="h-2 rounded w-1/2" style="background:var(--pf-gray-400)"></div>
+                  <div class="h-2 rounded w-full" style="background:var(--pf-gray-400)"></div>
+                  <div class="h-2 rounded w-2/3" style="background:var(--pf-gray-400)"></div>
+                  <div class="h-2 rounded w-full" style="background:var(--pf-gray-400)"></div>
+                  <div class="h-2 rounded w-1/3" style="background:var(--pf-gray-400)"></div>
+                </div>
+              </div>
+              <p id="ia-scanning-text" class="text-sm font-medium text-slate-700">Subiendo documento<span class="pulse-dot">...</span></p>
+              <p class="text-xs text-gray-400 mt-1">ProFid IA está leyendo el comprobante</p>
+            </div>
+
+            <!-- Formulario de validación -->
+            <form id="ia-form" class="hidden-view space-y-4">
+              <div class="text-xs rounded-lg px-4 py-2 flex items-center gap-2 border" style="background:rgba(90,169,214,0.10); border-color:var(--pf-sky-300); color:var(--pf-brand-700);">
+                ✅ Completá o corregí los datos detectados antes de guardarlos.
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Proveedor</label>
+                  <input id="f-proveedor" type="text" placeholder="Ej: Corralón San Martín" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Fecha de factura</label>
+                  <input id="f-fecha" type="date" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Insumo de construcción</label>
+                  <input id="f-insumo" type="text" placeholder="Ej: Cemento Portland" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Unidad de medida</label>
+                  <select id="f-unidad" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                    <option value="bolsa">Bolsa</option>
+                    <option value="kg">Kilogramo (kg)</option>
+                    <option value="m3">Metro cúbico (m³)</option>
+                    <option value="unidad">Unidad</option>
+                    <option value="barra">Barra</option>
+                    <option value="litro">Litro</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Cantidad</label>
+                  <input id="f-cantidad" type="number" min="0" step="1" placeholder="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div>
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Precio unitario ($)</label>
+                  <input id="f-precio" type="number" min="0" step="0.01" placeholder="0" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="text-xs text-gray-500 font-medium mb-1 block">Partida de obra asociada</label>
+                  <select id="f-partida" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none"></select>
+                  <p id="f-partida-warning" class="hidden-view text-xs mt-1" style="color:var(--pf-red)">Primero agregá al menos una partida de obra en el Dashboard.</p>
+                </div>
+                <div class="md:col-span-2 rounded-lg px-4 py-3 flex items-center justify-between border" style="background:var(--pf-gray-50); border-color:var(--pf-gray-200);">
+                  <span class="text-sm text-gray-600">Monto total de la factura</span>
+                  <span id="f-total" class="font-industrial text-xl font-bold text-slate-800">$0</span>
+                </div>
+              </div>
+
+              <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                <button type="button" id="btn-cancelar-ia" class="flex-1 border border-gray-300 text-gray-600 font-medium py-2.5 rounded-lg hover:bg-gray-50 transition text-sm">Cancelar</button>
+                <button type="submit" class="flex-1 btn-primary font-bold py-2.5 rounded-lg transition text-sm">Confirmar y guardar en el sistema</button>
+              </div>
+            </form>
+
+            <!-- Confirmación -->
+            <div id="ia-success" class="hidden-view text-center py-14">
+              <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl mx-auto mb-4" style="background:rgba(31,157,100,0.12); color:var(--pf-green)">✔</div>
+              <p class="font-semibold text-slate-800 mb-1">¡Factura registrada con éxito!</p>
+              <p class="text-sm text-gray-500 mb-6">El catálogo de insumos y el presupuesto de obra ya fueron actualizados.</p>
+              <div class="flex justify-center gap-3">
+                <button id="btn-ver-dashboard" class="bg-slate-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg hover:bg-slate-700 transition">Ver Dashboard</button>
+                <button id="btn-nueva-factura" class="btn-primary text-sm font-bold px-5 py-2.5 rounded-lg transition">Cargar otra factura</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB: CATÁLOGO ================= -->
+      <section id="tab-catalogo" class="fade-in hidden-view">
+        <div class="bg-white rounded-xl p-5 md:p-6 card-elevate border border-gray-100">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+            <div>
+              <h2 class="font-industrial text-xl font-bold text-slate-800">CATÁLOGO UNIFICADO DE INSUMOS</h2>
+              <p class="text-sm text-gray-500">Materiales consolidados de todos los proveedores, sin duplicados</p>
+            </div>
+            <div class="flex gap-2">
+              <input id="catalogo-search" type="text" placeholder="Buscar insumo o proveedor..." class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full md:w-64 focus:outline-none">
+              <select id="catalogo-filter" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                <option value="">Todas las partidas</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <div class="rounded-lg p-3 text-center" style="background:var(--pf-gray-50)">
+              <p id="cat-stat-items" class="font-industrial text-2xl font-bold text-slate-800">0</p>
+              <p class="text-xs text-gray-500">Insumos únicos</p>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:var(--pf-gray-50)">
+              <p id="cat-stat-prov" class="font-industrial text-2xl font-bold text-slate-800">0</p>
+              <p class="text-xs text-gray-500">Proveedores</p>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:var(--pf-gray-50)">
+              <p id="cat-stat-avg" class="font-industrial text-2xl font-bold text-slate-800">$0</p>
+              <p class="text-xs text-gray-500">Precio prom.</p>
+            </div>
+            <div class="rounded-lg p-3 text-center" style="background:var(--pf-gray-50)">
+              <p id="cat-stat-updated" class="font-industrial text-2xl font-bold text-slate-800">-</p>
+              <p class="text-xs text-gray-500">Última actualización</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto scrollbar-thin max-h-[520px] overflow-y-auto rounded-lg border border-gray-100">
+            <table class="w-full text-sm catalog-table">
+              <thead>
+                <tr class="text-left text-gray-500 border-b border-gray-200">
+                  <th class="py-3 px-4 font-medium">Insumo</th>
+                  <th class="py-3 px-4 font-medium">Partida</th>
+                  <th class="py-3 px-4 font-medium">Proveedor actual</th>
+                  <th class="py-3 px-4 font-medium">Unidad</th>
+                  <th class="py-3 px-4 font-medium text-right">Precio unitario</th>
+                  <th class="py-3 px-4 font-medium text-right">Actualizado</th>
+                </tr>
+              </thead>
+              <tbody id="catalogo-body" class="divide-y divide-gray-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white text-sm px-5 py-3 rounded-lg shadow-xl opacity-0 pointer-events-none transition-all duration-300 z-50 flex items-center gap-2">
+  <span id="toast-icon">✔</span> <span id="toast-text">Listo</span>
+</div>
+
+<script>
+/* =========================================================================
+   PROFID · GESTIÓN DE PRESUPUESTOS DE OBRA
+   Interfaz lista para conectarse a una base de datos real. No incluye datos
+   de ejemplo: partidas, catálogo de insumos y movimientos se cargan desde
+   cero y se completan a través del uso del sistema (o de tu integración
+   con base de datos / API de extracción IA).
+   ========================================================================= */
+
+// ---------- 1. ESTADO GLOBAL DE LA APLICACIÓN ----------
+// Reemplazá estos arrays/objetos por los datos que traigas de tu base de datos.
+
+const state = {
+  usuario: { nombre: "Usuario", rol: "Sin perfil asignado", proyecto: "" },
+  // Partidas de obra: { id, nombre, asignado, gastado }. Se cargan vacías.
+  partidas: [],
+  // Catálogo unificado: clave = proveedor+insumo normalizado, para evitar duplicados
+  catalogo: {},
+  // Historial de facturas procesadas
+  movimientos: [],
+};
+
+let facturaActual = null; // datos en edición pendientes de validación
+
+// ---------- 2. UTILIDADES ----------
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => document.querySelectorAll(sel);
+
+function formatMoney(n){
+  return "$" + Math.round(n || 0).toLocaleString("es-AR");
+}
+
+function formatFecha(iso){
+  if(!iso) return "-";
+  const [y,m,d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function showToast(text, icon="✔"){
+  const t = $("#toast");
+  $("#toast-icon").textContent = icon;
+  $("#toast-text").textContent = text;
+  t.classList.remove("opacity-0","pointer-events-none");
+  t.classList.add("opacity-100");
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>{
+    t.classList.add("opacity-0","pointer-events-none");
+    t.classList.remove("opacity-100");
+  }, 2600);
+}
+
+function unidadLabel(u){
+  const map = { bolsa:"Bolsa", kg:"kg", m3:"m³", unidad:"Unidad", barra:"Barra", litro:"Litro" };
+  return map[u] || u;
+}
+
+function slugify(text){
+  return text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[^a-z0-9]+/g,"-").replace(/(^-|-$)/g,"") || ("partida-" + Date.now());
+}
+
+// ---------- 3. NAVEGACIÓN ENTRE PESTAÑAS ----------
+
+const tabTitles = {
+  dashboard: "DASHBOARD DE OBRA",
+  carga: "CARGA DE FACTURAS IA",
+  catalogo: "CATÁLOGO DE INSUMOS",
+};
+
+function switchTab(tab){
+  ["dashboard","carga","catalogo"].forEach(t=>{
+    $("#tab-"+t).classList.toggle("hidden-view", t !== tab);
+  });
+  $$(".nav-item").forEach(b=> b.classList.toggle("active", b.dataset.tab === tab));
+  $("#topbar-title").textContent = tabTitles[tab];
+  $("#mobile-nav").value = tab;
+  if(tab === "dashboard") renderDashboard();
+  if(tab === "catalogo") renderCatalogo();
+  if(tab === "carga") poblarSelectPartidas();
+}
+
+$$(".nav-item").forEach(btn=>{
+  btn.addEventListener("click", ()=> switchTab(btn.dataset.tab));
+});
+$("#mobile-nav").addEventListener("change", (e)=> switchTab(e.target.value));
+
+// ---------- 4. DASHBOARD: PRESUPUESTO VS GASTO REAL ----------
+
+// Alta manual de partidas (sustituible por una carga desde base de datos)
+$("#btn-nueva-partida").addEventListener("click", ()=>{
+  $("#form-partida").classList.toggle("hidden-view");
+});
+$("#btn-cancelar-partida").addEventListener("click", ()=>{
+  $("#form-partida").classList.add("hidden-view");
+  $("#form-partida").reset();
+});
+$("#form-partida").addEventListener("submit", (e)=>{
+  e.preventDefault();
+  const nombre = $("#np-nombre").value.trim();
+  const asignado = parseFloat($("#np-asignado").value) || 0;
+  if(!nombre) return;
+
+  state.partidas.push({ id: slugify(nombre) + "-" + state.partidas.length, nombre, asignado, gastado: 0 });
+
+  $("#form-partida").reset();
+  $("#form-partida").classList.add("hidden-view");
+  showToast("Partida de obra agregada");
+  renderAll();
+});
+
+function renderDashboard(){
+  const totalAsignado = state.partidas.reduce((s,p)=> s + p.asignado, 0);
+  const totalGastado = state.partidas.reduce((s,p)=> s + p.gastado, 0);
+  const disponible = totalAsignado - totalGastado;
+  const porcentaje = totalAsignado ? Math.min(100, (totalGastado/totalAsignado)*100) : 0;
+
+  $("#metric-total").textContent = formatMoney(totalAsignado);
+  $("#metric-gastado").textContent = formatMoney(totalGastado);
+  $("#metric-disponible").textContent = formatMoney(disponible);
+  $("#metric-porcentaje").textContent = porcentaje.toFixed(1) + "%";
+  $("#metric-porcentaje-bar").style.width = porcentaje + "%";
+
+  // Barras por partida
+  const cont = $("#partidas-container");
+  cont.innerHTML = "";
+  $("#partidas-empty").classList.toggle("hidden-view", state.partidas.length > 0);
+
+  state.partidas.forEach(p=>{
+    const pct = p.asignado ? Math.min(100, (p.gastado/p.asignado)*100) : 0;
+    const excedido = p.gastado > p.asignado;
+    const barStyle = excedido ? "background:var(--pf-red)" : (pct > 80 ? "background:var(--pf-amber)" : "");
+
+    const row = document.createElement("div");
+    row.innerHTML = `
+      <div class="flex items-center justify-between mb-1.5 flex-wrap gap-1">
+        <span class="text-sm font-semibold text-slate-700">${p.nombre}</span>
+        <span class="text-xs ${excedido ? "font-semibold" : "text-gray-500"}" style="${excedido ? "color:var(--pf-red)" : ""}">
+          ${formatMoney(p.gastado)} / ${formatMoney(p.asignado)} ${excedido ? "· ¡Excedido!" : ""}
+        </span>
+      </div>
+      <div class="progress-track h-3">
+        <div class="progress-fill h-3" style="width:${pct}%; ${barStyle}"></div>
+      </div>
+    `;
+    cont.appendChild(row);
+  });
+
+  // Tabla de últimos movimientos
+  const body = $("#movimientos-body");
+  body.innerHTML = "";
+  const ultimos = [...state.movimientos].reverse().slice(0,8);
+  $("#movimientos-empty").classList.toggle("hidden-view", ultimos.length > 0);
+
+  ultimos.forEach(m=>{
+    const partidaNombre = state.partidas.find(p=>p.id===m.partida)?.nombre || m.partida;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="py-2.5 pr-4 font-medium text-slate-700">${m.proveedor}</td>
+      <td class="py-2.5 pr-4 text-gray-500">${formatFecha(m.fecha)}</td>
+      <td class="py-2.5 pr-4 text-gray-500">${m.insumo}</td>
+      <td class="py-2.5 pr-4"><span class="badge" style="background:var(--pf-gray-100); color:var(--pf-gray-700)">${partidaNombre}</span></td>
+      <td class="py-2.5 pr-4 text-right font-semibold text-slate-700">${formatMoney(m.total)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+// ---------- 5. CATÁLOGO UNIFICADO DE INSUMOS ----------
+
+function claveInsumo(proveedor, insumo){
+  return (proveedor + "|" + insumo).toLowerCase().trim();
+}
+
+function actualizarCatalogo(item){
+  const key = claveInsumo(item.proveedor, item.insumo);
+  state.catalogo[key] = {
+    insumo: item.insumo,
+    proveedor: item.proveedor,
+    unidad: item.unidad,
+    precio: item.precio,
+    partida: item.partida,
+    fecha: item.fecha,
+  };
+}
+
+function renderCatalogo(){
+  // Poblar filtro de partidas
+  const filtro = $("#catalogo-filter");
+  const valorPrevio = filtro.value;
+  filtro.innerHTML = '<option value="">Todas las partidas</option>';
+  state.partidas.forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value = p.id; opt.textContent = p.nombre;
+    filtro.appendChild(opt);
+  });
+  filtro.value = valorPrevio;
+
+  const items = Object.values(state.catalogo);
+  const term = $("#catalogo-search").value.trim().toLowerCase();
+  const partidaSel = filtro.value;
+
+  const filtrados = items.filter(it=>{
+    const matchTerm = !term || it.insumo.toLowerCase().includes(term) || it.proveedor.toLowerCase().includes(term);
+    const matchPartida = !partidaSel || it.partida === partidaSel;
+    return matchTerm && matchPartida;
+  }).sort((a,b)=> a.insumo.localeCompare(b.insumo));
+
+  const body = $("#catalogo-body");
+  body.innerHTML = "";
+
+  if(filtrados.length === 0){
+    body.innerHTML = `<tr><td colspan="6" class="text-center text-gray-400 text-sm py-10">Aún no hay insumos cargados. Procesá una factura o conectá tu base de datos.</td></tr>`;
+  }
+
+  filtrados.forEach(it=>{
+    const partidaNombre = state.partidas.find(p=>p.id===it.partida)?.nombre || it.partida;
+    const tr = document.createElement("tr");
+    tr.className = "hover:bg-gray-50";
+    tr.innerHTML = `
+      <td class="py-2.5 px-4 font-medium text-slate-700">${it.insumo}</td>
+      <td class="py-2.5 px-4"><span class="badge" style="background:var(--pf-gray-100); color:var(--pf-gray-700)">${partidaNombre}</span></td>
+      <td class="py-2.5 px-4 text-gray-500">${it.proveedor}</td>
+      <td class="py-2.5 px-4 text-gray-500">${unidadLabel(it.unidad)}</td>
+      <td class="py-2.5 px-4 text-right font-semibold text-slate-700">${formatMoney(it.precio)}</td>
+      <td class="py-2.5 px-4 text-right text-gray-400 text-xs">${formatFecha(it.fecha)}</td>
+    `;
+    body.appendChild(tr);
+  });
+
+  // Estadísticas del catálogo
+  const proveedoresUnicos = new Set(items.map(i=>i.proveedor));
+  const promedio = items.length ? items.reduce((s,i)=>s+i.precio,0) / items.length : 0;
+  const ultimaFecha = items.reduce((max,i)=> (!max || i.fecha > max) ? i.fecha : max, null);
+
+  $("#cat-stat-items").textContent = items.length;
+  $("#cat-stat-prov").textContent = proveedoresUnicos.size;
+  $("#cat-stat-avg").textContent = formatMoney(promedio);
+  $("#cat-stat-updated").textContent = ultimaFecha ? formatFecha(ultimaFecha) : "-";
+}
+
+$("#catalogo-search").addEventListener("input", renderCatalogo);
+$("#catalogo-filter").addEventListener("change", renderCatalogo);
+
+// ---------- 6. MÓDULO DE EXTRACCIÓN IA (SIMULACIÓN DE FLUJO) ----------
+
+// Poblar el select de partidas dentro del formulario de validación
+function poblarSelectPartidas(){
+  const sel = $("#f-partida");
+  const valorPrevio = sel.value;
+  sel.innerHTML = "";
+  state.partidas.forEach(p=>{
+    const opt = document.createElement("option");
+    opt.value = p.id; opt.textContent = p.nombre;
+    sel.appendChild(opt);
+  });
+  sel.value = valorPrevio;
+  const sinPartidas = state.partidas.length === 0;
+  $("#f-partida-warning").classList.toggle("hidden-view", !sinPartidas);
+  sel.disabled = sinPartidas;
+}
+poblarSelectPartidas();
+
+// Click en la dropzone -> simula la subida de un PDF y el análisis por IA
+$("#dropzone").addEventListener("click", (e)=>{
+  e.preventDefault();
+  iniciarProcesoIA();
+});
+
+function setStep(n){
+  // n: 1 = escaneando, 2 = validación, 3 = confirmado
+  [1,2,3].forEach(i=>{
+    const dot = $(`.step-dot[data-step="${i}"]`);
+    dot.classList.remove("active","done");
+    if(i < n) dot.classList.add("done");
+    if(i === n) dot.classList.add("active");
+  });
+  [1,2].forEach(i=>{
+    const line = $(`.step-line[data-line="${i}"]`);
+    line.classList.toggle("done", n > i);
+  });
+}
+
+function iniciarProcesoIA(){
+  // Muestra el estado "escaneando"
+  $("#ia-empty").classList.add("hidden-view");
+  $("#ia-form").classList.add("hidden-view");
+  $("#ia-success").classList.add("hidden-view");
+  $("#ia-scanning").classList.remove("hidden-view");
+  setStep(1);
+
+  const mensajes = [
+    "Subiendo documento...",
+    "Analizando estructura del PDF...",
+    "Buscando campos clave...",
+    "Preparando formulario de validación..."
+  ];
+  let i = 0;
+  $("#ia-scanning-text").innerHTML = mensajes[0] + '<span class="pulse-dot">...</span>';
+  const interval = setInterval(()=>{
+    i++;
+    if(i < mensajes.length){
+      $("#ia-scanning-text").innerHTML = mensajes[i] + '<span class="pulse-dot">...</span>';
+    }
+  }, 550);
+
+  setTimeout(()=>{
+    clearInterval(interval);
+    mostrarFormularioValidacion();
+  }, 550 * mensajes.length + 300);
+}
+
+function mostrarFormularioValidacion(){
+  $("#ia-scanning").classList.add("hidden-view");
+  $("#ia-form").classList.remove("hidden-view");
+  setStep(2);
+
+  // El formulario se muestra vacío: acá es donde tu integración de IA / base
+  // de datos debería precargar los valores extraídos del documento real.
+  $("#ia-form").reset();
+  poblarSelectPartidas();
+  actualizarTotalFactura();
+}
+
+function actualizarTotalFactura(){
+  const cant = parseFloat($("#f-cantidad").value) || 0;
+  const precio = parseFloat($("#f-precio").value) || 0;
+  $("#f-total").textContent = formatMoney(cant * precio);
+}
+["f-cantidad","f-precio"].forEach(id=>{
+  $("#"+id).addEventListener("input", actualizarTotalFactura);
+});
+
+$("#btn-cancelar-ia").addEventListener("click", resetIA);
+
+function resetIA(){
+  facturaActual = null;
+  $("#ia-form").classList.add("hidden-view");
+  $("#ia-scanning").classList.add("hidden-view");
+  $("#ia-success").classList.add("hidden-view");
+  $("#ia-empty").classList.remove("hidden-view");
+  setStep(0);
+}
+
+// Confirmar factura: acá impacta en presupuesto + catálogo en tiempo real
+$("#ia-form").addEventListener("submit", (e)=>{
+  e.preventDefault();
+
+  if(state.partidas.length === 0){
+    showToast("Agregá una partida de obra antes de guardar", "⚠");
+    return;
+  }
+
+  const item = {
+    proveedor: $("#f-proveedor").value.trim(),
+    fecha: $("#f-fecha").value,
+    insumo: $("#f-insumo").value.trim(),
+    unidad: $("#f-unidad").value,
+    cantidad: parseFloat($("#f-cantidad").value) || 0,
+    precio: parseFloat($("#f-precio").value) || 0,
+    partida: $("#f-partida").value,
+  };
+
+  if(!item.proveedor || !item.insumo || !item.fecha){
+    showToast("Completá proveedor, insumo y fecha", "⚠");
+    return;
+  }
+
+  const total = item.cantidad * item.precio;
+
+  // 1) Actualiza el presupuesto de la partida correspondiente
+  const partida = state.partidas.find(p=>p.id === item.partida);
+  if(partida) partida.gastado += total;
+
+  // 2) Actualiza el catálogo unificado (evita duplicados por proveedor+insumo)
+  actualizarCatalogo(item);
+
+  // 3) Registra el movimiento para el historial del dashboard
+  state.movimientos.push({
+    proveedor: item.proveedor, fecha: item.fecha, insumo: item.insumo,
+    partida: item.partida, total,
+  });
+
+  // Mostrar confirmación
+  $("#ia-form").classList.add("hidden-view");
+  $("#ia-success").classList.remove("hidden-view");
+  setStep(3);
+
+  showToast("Factura guardada · presupuesto y catálogo actualizados");
+  renderAll();
+});
+
+$("#btn-nueva-factura").addEventListener("click", resetIA);
+$("#btn-ver-dashboard").addEventListener("click", ()=>{
+  resetIA();
+  switchTab("dashboard");
+});
+
+// ---------- 7. INICIALIZACIÓN ----------
+
+function renderAll(){
+  renderDashboard();
+  renderCatalogo();
+}
+
+function initUsuario(){
+  $("#sidebar-avatar").textContent = "U";
+  $("#topbar-avatar").textContent = "U";
+  $("#sidebar-name").textContent = state.usuario.nombre;
+  $("#sidebar-role").textContent = state.usuario.rol;
+  $("#topbar-project").textContent = state.usuario.proyecto || "Sin obra asignada";
+}
+
+setStep(0);
+initUsuario();
+renderAll();
+</script>
+</body>
+</html>
